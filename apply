@@ -1,0 +1,6 @@
+#!/bin/bash
+psql -U robert -d robert -c 'drop extension alps;'
+sudo service postgresql restart
+psql -U robert -d robert -c 'create extension alps;'
+sudo service postgresql restart
+echo 'done'

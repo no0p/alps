@@ -1,0 +1,46 @@
+WITH non_index_columns as (SELECT tablez.relname, attname, typname, pg_tables.schemaname
+  FROM (
+    SELECT relname, oid 
+      FROM pg_class where relname in (
+        SELECT tablename FROM pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+      ) 
+    ) AS tablez 
+      INNER JOIN pg_attribute on pg_attribute.attrelid = tablez.oid
+      INNER JOIN pg_type on pg_type.oid = pg_attribute.atttypid
+      INNER JOIN pg_tables ON pg_tables.tablename = tablez.relname
+      INNER JOIN pg_stat_all_tables ON pg_stat_all_tables.relid = tablez.oid
+      LEFT OUTER JOIN madhatter.model_status mstat ON mstat.relid = tablez.oid
+  WHERE typname NOT IN ('xid', 'cid', 'tid', 'oid') AND (mstat.last_trained_at IS NULL OR mstat.last_trained_at < pg_stat_all_tables.last_autoanalyze OR mstat.last_trained_at < pg_stat_all_tables.last_autoanalyze)
+  AND NOT EXISTS (
+    SELECT * FROM pg_index INNER JOIN pg_class ON pg_index.indexrelid = pg_class.oid AND pg_index.indkey::text = pg_attribute.attnum::text
+  )
+  ORDER BY relname),
+  numeric_columns as (SELECT tablez.relname, attname, typname, tablez.schemaname
+  FROM (
+    SELECT relname, oid 
+      FROM pg_class where relname in (
+        SELECT tablename FROM pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+      ) 
+    ) AS tablez 
+      INNER JOIN pg_attribute on pg_attribute.attrelid = tablez.oid
+      INNER JOIN pg_type on pg_type.oid = pg_attribute.atttypid
+      INNER JOIN pg_tables ON pg_tables.tablename = tablez.relname
+      INNER JOIN pg_stat_all_tables ON pg_stat_all_tables.relid = tablez.oid
+      LEFT OUTER JOIN madhatter.model_status mstat ON mstat.relid = tablez.oid
+  WHERE typname IN ('numeric', 'int', 'float') AND (mstat.last_trained_at IS NULL OR mstat.last_trained_at < pg_stat_all_tables.last_autoanalyze OR mstat.last_trained_at < pg_stat_all_tables.last_autoanalyze)
+  AND NOT EXISTS (
+    SELECT * FROM pg_index INNER JOIN pg_class ON pg_index.indexrelid = pg_class.oid AND pg_index.indkey::text = pg_attribute.attnum::text
+  )
+  ORDER BY relname)
+SELECT prec.schemaname, prec.relname, prec.attname, prec.typname, '"' || coalesce(prec.string_agg, '') || (case when prec.string_agg is not null and follow.string_agg is not null then ',' else '' end ) || coalesce(follow.string_agg, '') || '"'
+  FROM
+    (SELECT ac.schemaname, ac.relname, ac.attname, ac.typname, string_agg(nc.attname, '","')
+      OVER (PARTITION BY ac.relname ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) 
+        FROM non_index_columns ac
+          LEFT OUTER JOIN numeric_columns nc ON ac.relname = nc.relname AND ac.schemaname = nc.schemaname AND ac.attname = nc.attname) as prec
+    INNER JOIN (
+      SELECT ac.schemaname, ac.relname, ac.attname, ac.typname, string_agg(nc.attname, '","')
+        OVER (PARTITION BY ac.relname ROWS BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING) 
+          FROM non_index_columns ac
+            LEFT OUTER JOIN numeric_columns nc ON ac.relname = nc.relname AND ac.schemaname = nc.schemaname AND ac.attname = nc.attname
+    ) as follow ON follow.relname = prec.relname AND follow.schemaname = prec.schemaname AND follow.attname = prec.attname;
