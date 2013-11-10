@@ -263,17 +263,6 @@ void alps_sighup(SIGNAL_ARGS) {
     SetLatch(&MyProc->procLatch);
 }
 
-/* This currently does nothing */
-Datum alps_launch(PG_FUNCTION_ARGS) {
-  elog(LOG, "alps hello world");
-  PG_RETURN_INT32(0);
-}
-
-Datum predict(PG_FUNCTION_ARGS) {
-  elog(LOG, "alps hello world");
-  PG_RETURN_TEXT_P(cstring_to_text("result"));
-}
-
 void delay(void) {
   WaitLatch(&MyProc->procLatch, WL_LATCH_SET | WL_TIMEOUT, alps_delay * 1L);
   ResetLatch(&MyProc->procLatch);

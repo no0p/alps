@@ -69,7 +69,7 @@ void apply_logit_model_to_columns(char *schemaname, char *tablename, char* colna
      "UPDATE %s.%s SET \"%s__predicted\" = madlib.logregr_predict(ARRAY[1, %s], m.coef) FROM alps.\"%s_%s_%s_logit\" m",
      schemaname, tablename, colname, support, schemaname, tablename, colname
   );
-  elog(LOG, "About to execute");
+
   ret = SPI_execute(buf.data, false, 0);
   if (ret != SPI_OK_UPDATE) 
     elog(FATAL, "unable to update predicted values.");
