@@ -26,7 +26,7 @@
 
 This extension implements a postgres background worker which builds generic statistical models.  
 
-It's kind of like autovacuum but updating parameter vectors rather than removing dead tuples.
+It's kind of like an autovacuum which updates parameter vectors rather than removing dead tuples.
 
 ## Usage
 
