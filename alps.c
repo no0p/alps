@@ -10,7 +10,7 @@ volatile sig_atomic_t got_sigterm = false;
 volatile sig_atomic_t got_sighup = false;
 
 /* This is the main execution loop for the alps module */
- void alps_main(Datum main_arg) {
+void alps_main(Datum main_arg) {
   elog(LOG, "Everybody Get Up!");
   
   pqsignal(SIGTERM, alps_sigterm);
@@ -166,7 +166,9 @@ void process_columns(void) {
           train_regression_model(schema_name, table_name, colname, coltype, support);
         } else if (modelt == LOGISTIC_REGRESSION) {    
           train_logit_model(schema_name, table_name, colname, coltype, support);
-        }  
+        }
+        
+        delay(); //no starve
         
         /* Apply models */
         /*if (strcmp(method, "join_table") == 0) {
@@ -180,6 +182,8 @@ void process_columns(void) {
             apply_regression_model_to_column(schema_name, table_name, colname, coltype, support);
           else if (modelt == LOGISTIC_REGRESSION)
             apply_logit_model_to_columns(schema_name, table_name, colname, coltype, support);
+            
+          delay(); // no starve
         } else {
           elog(LOG, "unknown model application method");
         }
@@ -245,7 +249,7 @@ void initialize_mh(void) {
 }
 
 /* Signal Handlers*/
- void alps_sigterm(SIGNAL_ARGS) {
+void alps_sigterm(SIGNAL_ARGS) {
   int save_errno = errno;
   got_sigterm = true;
   if (MyProc)
@@ -253,7 +257,7 @@ void initialize_mh(void) {
   errno = save_errno;
 }
 
- void alps_sighup(SIGNAL_ARGS) {
+void alps_sighup(SIGNAL_ARGS) {
   got_sighup = true;
   if (MyProc)
     SetLatch(&MyProc->procLatch);
@@ -270,12 +274,16 @@ Datum predict(PG_FUNCTION_ARGS) {
   PG_RETURN_TEXT_P(cstring_to_text("result"));
 }
 
+void delay(void) {
+  WaitLatch(&MyProc->procLatch, WL_LATCH_SET | WL_TIMEOUT, alps_delay * 1L);
+  ResetLatch(&MyProc->procLatch);
+}
+
 /* This is callback execute when creating the extension.  It registers the background worker
    In the future may make sense to start the background worker at this point, so as not to require
    a server restart.
  */
-void
-_PG_init(void) {
+void _PG_init(void) {
   BackgroundWorker worker;
   
   
@@ -304,6 +312,21 @@ _PG_init(void) {
                             NULL,
                             NULL,
                             NULL);
+                            
+  /* Seconds between query to check if modeling work is to be done */
+  DefineCustomIntVariable("alps.delay",
+                            "Duration between training and update operations (in milli seconds).",
+                            NULL,
+                            &alps_delay,
+                            200,
+                            1,
+                            INT_MAX,
+                            PGC_SIGHUP,
+                            0,
+                            NULL,
+                            NULL,
+                            NULL);
+                            
   /* How predicted values are stored.  
      Can add columns to tables, or create a join table if primary key is available.
        options are "join_table", "add_columns"

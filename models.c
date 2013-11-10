@@ -51,7 +51,7 @@ void train_regression_model(char *schemaname, char *tablename, char* colname, ch
      colname,
      colname, 
      support);
-  elog(LOG, "%s", buf.data);
+  //elog(LOG, "%s", buf.data);
         
   SPI_execute(buf.data, false, 0);
 }
@@ -88,7 +88,7 @@ void apply_regression_model_to_column(char *schemaname, char *tablename, char* c
      "UPDATE %s.%s SET \"%s__predicted\" = madlib.linregr_predict(ARRAY[1, %s], m.coef) FROM alps.\"%s_%s_%s_linregr\" m",
      schemaname, tablename, colname, support, schemaname, tablename, colname
   );
-  elog(LOG, "About to execute");
+  //elog(LOG, "About to execute");
   ret = SPI_execute(buf.data, false, 0);
   if (ret != SPI_OK_UPDATE) 
     elog(FATAL, "unable to update predicted values.");

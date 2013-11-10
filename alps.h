@@ -27,6 +27,7 @@ void alps_main(Datum);
 void alps_sigterm(SIGNAL_ARGS);
 void alps_sighup(SIGNAL_ARGS);
 
+void delay(void);
 void initialize_mh(void);
 void process_columns(void);
 
@@ -37,6 +38,7 @@ Datum predict(PG_FUNCTION_ARGS);
 char* target_db;
 char* method;
 int alps_poll_seconds;
+int alps_delay;
 
 /* model functions */
 void train_logit_model(char *schemaname, char *tablename, char* colname, char* coltype, char *support);
