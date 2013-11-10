@@ -31,8 +31,6 @@ First things first, NEVER run alps on a transactional production system.  Not th
 
 This extension is writes to your database on the fly, and is therefore inherently unsafe and should only be run on replicated servers used for reporting which can be rebuilt.
 
-If you do not have a dedicated reporting server, you can get a free one from Relational Systems at http://relsys.io.
-
 ## Installation
 
 On a system with all dependencies installation is pretty straightforward (see next section for dependency installation).  
@@ -82,5 +80,10 @@ A common use for filling in nulls is...
 ```
 select id, coalesce(price, price__predicted);
 ```
+
+## About
+
+Extracted from work on http://relsys.io
+
 
 
