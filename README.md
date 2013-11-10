@@ -57,7 +57,7 @@ This extension adds columns, modifies the database on the fly, and runs as a pri
 
 On a system with all dependencies installation is pretty straightforward (see next section for dependency installation).  
 
-1.  Download and install
+### Download and install
 
 ```
 git clone git@github.com:no0p/alps.git
@@ -66,14 +66,14 @@ make
 make install
 ```
 
-2. Initialize extension
+### Initialize extension
 
 ```
 psql
 #> create extension alps;
 ```
 
-3.  Update configurations
+### Update configurations
 
 Edit postgresql.conf line...
 
