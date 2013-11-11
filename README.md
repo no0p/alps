@@ -102,9 +102,3 @@ Alps is triggered to re-train models for tables after tables are analyzed.  So y
 May require max_locks_per_transaction to be increased... working on relaxing this.
 
 
-## About
-
-Extracted from work on http://relsys.io
-
-
-
